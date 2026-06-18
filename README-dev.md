@@ -5,7 +5,8 @@ Contributor notes for the module. For what it does and how to install it, see th
 
 ## Setup
 
-Set up once — needs Node ≥ 22.12 and a local Foundry install. The
+Set up once — needs Node ≥ 22.18 (for native `.ts` config/tooling) and a local Foundry
+install. The
 [`fvtt`](https://github.com/foundryvtt/foundryvtt-cli) CLI (used to build the packs) ships as a
 dev dependency, so `npm install` brings it:
 
