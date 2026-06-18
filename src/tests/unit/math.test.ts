@@ -7,6 +7,7 @@ import {
   effectiveLevel,
   makeXpBudget,
   threatBand,
+  variantForAdjustment,
   type EncounterEntry,
   type Variant,
 } from '@/encounter/math';
@@ -97,6 +98,15 @@ describe('variant helpers', () => {
     expect(adjustmentForVariant(0)).toBeNull();
     expect(adjustmentForVariant(1)).toBe('weak');
     expect(adjustmentForVariant(2)).toBe('elite');
+  });
+
+  it('maps PF2e adjustments back to variants, round-tripping', () => {
+    expect(variantForAdjustment(null)).toBe(0);
+    expect(variantForAdjustment('weak')).toBe(1);
+    expect(variantForAdjustment('elite')).toBe(2);
+    for (const v of [0, 1, 2] as Variant[]) {
+      expect(variantForAdjustment(adjustmentForVariant(v))).toBe(v);
+    }
   });
 
   it('builds a distinct dedupe key per adjustment', () => {

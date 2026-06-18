@@ -9,8 +9,10 @@
     stageColor: string;
     totalsTextColor: string;
     saving: boolean;
+    loading: boolean;
     dropActive: boolean;
     onSave: () => void;
+    onLoad: () => void;
   }
 
   let {
@@ -21,8 +23,10 @@
     stageColor,
     totalsTextColor,
     saving,
+    loading,
     dropActive,
     onSave,
+    onLoad,
   }: Props = $props();
 
   const L = (k: string): string => game.i18n.localize(`pf2e-encounter-builder.${k}`);
@@ -52,7 +56,19 @@
 </script>
 
 <div class="encounter-section">
-  <h2 class="section-title">{L('encounter.title')}</h2>
+  <div class="encounter-header">
+    <h2 class="section-title">{L('encounter.title')}</h2>
+    <button
+      type="button"
+      class="load-btn"
+      disabled={loading}
+      title={L('encounter.loadHint')}
+      onclick={onLoad}
+    >
+      {#if loading}<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>{:else}<i class="fa-solid fa-download" aria-hidden="true"></i>{/if}
+      {L('encounter.load')}
+    </button>
+  </div>
   <div class="encounter-panel" class:drop-active={dropActive} style:--panel-border={stageColor}>
     <div class="totals" style:background={stageColor} style:color={totalsTextColor}>
       <strong>{game.i18n.format('pf2e-encounter-builder.encounter.totalCost', { xp: xpCost })}</strong>
@@ -67,36 +83,39 @@
 
     <ul class="encounter-list">
       {#each enriched as item, i (i + '-' + item.uuid)}
+        {@const activeIdx = SEGMENTS.findIndex((s) => s.variant === item.variant)}
         <li class="encounter-item">
-          <div class="count-controls">
-            <button type="button" class="count-btn" onclick={() => increment(i)} aria-label="+">+</button>
-            <button type="button" class="count-btn" onclick={() => decrement(i)} aria-label="−">−</button>
+          <button type="button" class="count-btn plus" onclick={() => increment(i)} aria-label="+">+</button>
+          <button type="button" class="count-btn minus" onclick={() => decrement(i)} aria-label="−">−</button>
+
+          <div class="name">{item.count} × {item.name}</div>
+          <div class="xp">{game.i18n.format('pf2e-encounter-builder.encounter.xpTotal', { xp: item.cost })}</div>
+
+          <div class="variant-block">
+            <div class="segmented" role="group">
+              {#each SEGMENTS as seg (seg.key)}
+                <button
+                  type="button"
+                  class="segment"
+                  class:active={item.variant === seg.variant}
+                  onclick={() => setVariant(i, seg.variant)}
+                >{L(`encounter.${seg.key}`)}</button>
+              {/each}
+            </div>
+            <div class="efflevel" style:grid-column={activeIdx + 1}>{game.i18n.format('pf2e-encounter-builder.encounter.levelShort', { level: item.effLevel })}</div>
           </div>
-          <div class="info">
-            <div class="title">{item.count} × {item.name}</div>
-            <div class="cost">XP {item.cost}</div>
-            {#if item.band === 'below'}
-              <div class="alert below">
-                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-                {L('encounter.belowMin')}
-              </div>
-            {:else if item.band === 'above'}
-              <div class="alert above">
-                <i class="fa-solid fa-skull-crossbones" aria-hidden="true"></i>
-                {L('encounter.aboveMax')}
-              </div>
-            {/if}
-          </div>
-          <div class="segmented" role="group">
-            {#each SEGMENTS as seg (seg.key)}
-              <button
-                type="button"
-                class="segment"
-                class:active={item.variant === seg.variant}
-                onclick={() => setVariant(i, seg.variant)}
-              >{L(`encounter.${seg.key}`)}</button>
-            {/each}
-          </div>
+
+          {#if item.band === 'below'}
+            <div class="alert below">
+              <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+              {L('encounter.belowMin')}
+            </div>
+          {:else if item.band === 'above'}
+            <div class="alert above">
+              <i class="fa-solid fa-skull-crossbones" aria-hidden="true"></i>
+              {L('encounter.aboveMax')}
+            </div>
+          {/if}
         </li>
       {/each}
       {#if encounter.length === 0}
@@ -122,11 +141,40 @@
 </div>
 
 <style>
+  .encounter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+  }
   .section-title {
     font-size: var(--peb-text-lg);
     font-weight: 700;
-    margin: 0 0 0.5rem;
+    margin: 0;
     border: none;
+  }
+  .load-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: auto;
+    padding: 3px 9px;
+    border: 1px solid rgba(128, 128, 128, 0.5);
+    border-radius: 4px;
+    background: rgba(128, 128, 128, 0.15);
+    color: inherit;
+    font-weight: 600;
+    font-size: var(--peb-text-sm);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .load-btn:hover:not(:disabled) {
+    background: rgba(128, 128, 128, 0.3);
+  }
+  .load-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
   .encounter-panel {
     display: flex;
@@ -183,19 +231,25 @@
   .encounter-item {
     display: grid;
     grid-template-columns: auto 1fr auto;
-    gap: 0.5rem;
+    grid-template-areas:
+      'plus  name variant'
+      'minus xp   variant';
+    column-gap: 0.5rem;
+    row-gap: 3px;
     align-items: center;
-    padding: 4px 0;
+    padding: 6px 0;
     border-bottom: 1px solid rgba(128, 128, 128, 0.2);
   }
-  .count-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+  /* A band warning drops to its own full-width row beneath the two-row entry. */
+  .encounter-item:has(.alert) {
+    grid-template-areas:
+      'plus  name  variant'
+      'minus xp    variant'
+      'alert alert alert';
   }
   .count-btn {
-    width: 22px;
-    height: 18px;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -206,18 +260,51 @@
     line-height: 1;
     color: inherit;
     padding: 0;
+    font-size: var(--peb-text-lg);
+  }
+  .count-btn.plus {
+    grid-area: plus;
+  }
+  .count-btn.minus {
+    grid-area: minus;
   }
   .count-btn:hover {
     background: rgba(128, 128, 128, 0.35);
   }
-  .info .title {
+  .name {
+    grid-area: name;
     font-size: var(--peb-text);
+    font-weight: 700;
+    line-height: 1.2;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .info .cost {
+  .xp {
+    grid-area: xp;
     font-size: var(--peb-text-sm);
     opacity: 0.7;
   }
+  /* Segmented control + level share one grid so the level can sit under the active segment.
+     subgrid hands the three button columns down to the level row. */
+  .variant-block {
+    grid-area: variant;
+    justify-self: end;
+    align-self: center;
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    row-gap: 3px;
+  }
+  .efflevel {
+    grid-row: 2;
+    text-align: center;
+    font-size: var(--peb-text-sm);
+    font-weight: 700;
+    color: var(--peb-brand-text);
+  }
   .alert {
+    grid-area: alert;
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -232,7 +319,10 @@
     color: #ff5a5a;
   }
   .segmented {
-    display: inline-flex;
+    grid-row: 1;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
     border: 1px solid var(--peb-brand-border);
     border-radius: 4px;
     overflow: hidden;

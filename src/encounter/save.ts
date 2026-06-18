@@ -1,5 +1,12 @@
 import { MODULE_ID } from '@/constants';
-import { adjustmentForVariant, dedupeKey, type EncounterEntry, type Variant } from '@/encounter/math';
+import {
+  adjustmentForVariant,
+  dedupeKey,
+  variantForAdjustment,
+  type EncounterEntry,
+  type Variant,
+} from '@/encounter/math';
+import { creatureFromUuid, entryToCreature, type RawIndexEntry } from '@/data/creatures';
 import type { ActorPF2e, CombatantPF2e, EncounterPF2e, ScenePF2e, TokenDocumentPF2e } from 'foundry-pf2e';
 
 const FOLDER_NAME = 'PF2e Encounter Builder';
@@ -160,6 +167,39 @@ export async function saveEncounter(entries: EncounterEntry[], _ctx: SaveContext
   await combat.createEmbeddedDocuments('Combatant', combatants);
   await combat.activate();
   return { combatantCount: combatants.length };
+}
+
+// Prefer the compendium source so we recover the creature's *base* stats (level/img/source
+// unmutated by an applied Elite/Weak adjustment); fall back to the live actor for homebrew
+// world actors that never came from a pack. Either way entryToCreature drops non-NPCs, so
+// party PCs and hazards in the combat are skipped.
+async function creatureForCombatant(actor: ActorPF2e) {
+  const source = actor.sourceId;
+  if (source) {
+    const fromSource = await creatureFromUuid(source);
+    if (fromSource) return fromSource;
+  }
+  return entryToCreature(actor as unknown as RawIndexEntry);
+}
+
+// Reverse of saveEncounter: rebuild the builder's entry list from a combat's combatants,
+// reading each actor's adjustment as the Weak/Base/Elite variant and collapsing identical
+// (source + adjustment) combatants into one counted row.
+export async function encounterFromCombat(combat: EncounterPF2e): Promise<EncounterEntry[]> {
+  const groups = new Map<string, EncounterEntry>();
+  for (const c of combat.combatants) {
+    const actor = c.actor;
+    if (!actor) continue;
+    const creature = await creatureForCombatant(actor);
+    if (!creature) continue;
+    const adjustment = actor.isOfType('npc') ? actor.system.attributes.adjustment : null;
+    const variant = variantForAdjustment(adjustment);
+    const key = dedupeKey(creature.uuid, variant);
+    const existing = groups.get(key);
+    if (existing) existing.count += 1;
+    else groups.set(key, { ...creature, variant, count: 1, cost: 0 });
+  }
+  return [...groups.values()];
 }
 
 // Combatants with an actor but no token on this scene — i.e. exactly what "Add to Scene"

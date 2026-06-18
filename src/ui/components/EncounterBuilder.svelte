@@ -12,7 +12,7 @@
     type EncounterEntry,
   } from '@/encounter/math';
   import { creatureFromUuid, loadCreatures, type CreatureIndex } from '@/data/creatures';
-  import { saveEncounter } from '@/encounter/save';
+  import { encounterFromCombat, saveEncounter } from '@/encounter/save';
   import CreatureTable from './CreatureTable.svelte';
   import CreatureFilters from './CreatureFilters.svelte';
   import EncounterList from './EncounterList.svelte';
@@ -74,11 +74,15 @@
   });
 
   const enriched = $derived(
-    encounter.map((e) => ({
-      ...e,
-      cost: computeCost(e, partyLevel) * e.count,
-      band: threatBand(effectiveLevel(e) - partyLevel),
-    })),
+    encounter.map((e) => {
+      const effLevel = effectiveLevel(e);
+      return {
+        ...e,
+        cost: computeCost(e, partyLevel) * e.count,
+        effLevel,
+        band: threatBand(effLevel - partyLevel),
+      };
+    }),
   );
   const xpCost = $derived(enriched.reduce((sum, e) => sum + e.cost, 0));
   const xpBudget = $derived(makeXpBudget(partySize));
@@ -133,6 +137,30 @@
     if (dropped.type !== 'Actor' || typeof dropped.uuid !== 'string') return;
     event.preventDefault();
     void addFromUuid(dropped.uuid);
+  }
+
+  let loading = $state(false);
+
+  async function load() {
+    const combat = game.combats.viewed;
+    if (!combat || combat.combatants.size === 0) {
+      ui.notifications.warn(L('notifications.loadNoEncounter'));
+      return;
+    }
+    loading = true;
+    try {
+      const entries = await encounterFromCombat(combat);
+      if (entries.length === 0) {
+        ui.notifications.warn(L('notifications.loadEmpty'));
+        return;
+      }
+      encounter = entries;
+    } catch (err) {
+      console.error(`${MODULE_ID} | load failed`, err);
+      ui.notifications.error(L('notifications.loadError'));
+    } finally {
+      loading = false;
+    }
   }
 
   async function save() {
@@ -203,8 +231,10 @@
           stageColor={activeStage.color}
           {totalsTextColor}
           {saving}
+          {loading}
           dropActive={dragActive}
           onSave={save}
+          onLoad={load}
         />
         <CreatureFilters
           options={data.options}

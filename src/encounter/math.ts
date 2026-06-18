@@ -79,6 +79,12 @@ export function adjustmentForVariant(variant: Variant): Adjustment {
   return null;
 }
 
+export function variantForAdjustment(adjustment: Adjustment): Variant {
+  if (adjustment === 'weak') return 1;
+  if (adjustment === 'elite') return 2;
+  return 0;
+}
+
 // Stable key for "same creature, same adjustment" — used to dedupe imported actors
 // and to aggregate identical encounter rows. base/weak/elite never collide.
 export function dedupeKey(uuid: string, variant: Variant): string {
@@ -130,9 +136,9 @@ export function threatBand(delta: number): ThreatBand {
   return 'normal';
 }
 
-// An encounter row with its per-creature cost recomputed for the current party and its threat
-// band resolved — what the list renders.
-export type EnrichedEntry = EncounterEntry & { band: ThreatBand };
+// An encounter row with its per-creature cost recomputed for the current party, its weak/elite
+// effective level, and its threat band resolved — what the list renders.
+export type EnrichedEntry = EncounterEntry & { effLevel: number; band: ThreatBand };
 
 export function filterOptions(all: string[], selected: string[], query: string): string[] {
   const q = query.trim().toLowerCase();
