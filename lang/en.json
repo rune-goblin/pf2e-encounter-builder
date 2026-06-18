@@ -1,5 +1,79 @@
 {
   "pf2e-encounter-builder": {
-    "title": "PF2E Encounter Builder"
+    "title": "PF2E Encounter Builder",
+    "button": {
+      "builder": "Encounter Builder",
+      "addToScene": "Add to Scene"
+    },
+    "status": {
+      "loading": "Loading creatures…",
+      "loadError": "Could not load creatures from the compendium."
+    },
+    "party": {
+      "size": "Party size",
+      "level": "Party level",
+      "fromParty": "From party",
+      "fromPartyHint": "Fill size and level from the active party"
+    },
+    "budget": {
+      "title": "Encounter Budget"
+    },
+    "table": {
+      "title": "Creatures",
+      "search": "Search",
+      "searchPlaceholder": "Creature name…",
+      "minLevel": "Min level",
+      "maxLevel": "Max level",
+      "matches": "{count} matching creatures",
+      "columns": "Columns",
+      "chooseColumns": "Choose columns",
+      "add": "Add to encounter",
+      "openSheet": "Open sheet",
+      "name": "Name",
+      "level": "Level",
+      "size": "Size",
+      "rarity": "Rarity",
+      "traits": "Traits",
+      "source": "Source"
+    },
+    "filters": {
+      "title": "Filter Creatures",
+      "remasterOnly": "Remaster only",
+      "reset": "Reset",
+      "size": "Size",
+      "trait": "Trait",
+      "creatureType": "Creature type",
+      "rarity": "Rarity",
+      "searchTraits": "Filter traits…"
+    },
+    "drop": {
+      "hint": "Drop to add to the encounter"
+    },
+    "encounter": {
+      "title": "Encounter",
+      "totalCost": "Total encounter cost: {xp} XP",
+      "xpAward": "XP award: {xp}",
+      "empty": "No creatures yet — add from the table, or drag one in from the sidebar or compendium browser.",
+      "clear": "Clear encounter",
+      "save": "Save Encounter",
+      "weak": "Weak",
+      "base": "Base",
+      "elite": "Elite",
+      "belowMin": "Less than minimum",
+      "aboveMax": "Danger: greater than maximum"
+    },
+    "notifications": {
+      "saved": "Encounter saved — {count} combatants added. Use Add to Scene to place their tokens.",
+      "saveError": "Could not save the encounter.",
+      "missingActor": "Could not find {name} in the compendium — skipped.",
+      "noEncounter": "No encounter to add — build one first.",
+      "noActiveScene": "No active scene — open a map first.",
+      "allOnScene": "Every combatant is already on the scene.",
+      "addedToScene": "Added {count} combatants to the scene.",
+      "addToSceneError": "Could not add the encounter to the scene.",
+      "noParty": "No active party found — assign one in the Actors directory.",
+      "dropNotCreature": "Only NPC creatures can be added — that wasn't one.",
+      "dropFailed": "Could not add the dropped creature."
+    }
   }
 }

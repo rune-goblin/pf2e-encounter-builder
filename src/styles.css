@@ -1,3 +1,46 @@
 .pf2e-encounter-builder {
-  --pf2e-encounter-builder-accent: #6b21a8;
+  /* Brand palette ported from the standalone's active (teal) theme. Bright text on a dim
+     border keeps badges/labels legible on a dark background; filled surfaces carry white. */
+  --peb-brand-text: #83ffd7;
+  --peb-brand-border: #007258;
+  --peb-brand-surface: #00745a;
+  --peb-brand-surface-low: #00251b;
+  --peb-on-brand: #ffffff;
+
+  /* Single typographic scale for the whole app — bump --peb-text to scale everything.
+     Fixed px (not rem) so the layout is independent of Foundry's root font-size. */
+  --peb-text: 14px;
+  --peb-text-sm: 12.5px;
+  --peb-text-lg: 18px;
+  font-size: var(--peb-text);
+  line-height: 1.4;
+}
+
+/* The Svelte UI owns its own scroll regions, so the window content must hand it a
+   definite height instead of scrolling as one block. Scoped to this app's root class. */
+.pf2e-encounter-builder .window-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+.pf2e-encounter-builder .peb-root {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* GM entry-point buttons injected above "Create Combat" in the Combat sidebar tab. */
+.pf2e-encounter-builder-launch {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.pf2e-encounter-builder-launch button {
+  flex: 1;
+}
+.pf2e-encounter-builder-launch button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
