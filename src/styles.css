@@ -12,6 +12,11 @@
   --peb-text: 14px;
   --peb-text-sm: 12.5px;
   --peb-text-lg: 18px;
+  /* Shared height for the "Creatures" / "Encounter" column headers so the rows below them
+     (the preview card and the encounter panel) start at the same y across the grid gap.
+     Foundry forces buttons to var(--button-size), which otherwise makes the Load-button
+     header taller than the heading-only one — see EncounterList .load-btn. */
+  --peb-header-h: 28px;
   font-size: var(--peb-text);
   line-height: 1.4;
 }
@@ -29,6 +34,17 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* Creature-table row striping. Foundry core paints `table tr:nth-child(even)` bright
+   (rgba(255,255,255,0.2)) via `body.game .app table tr` — a Svelte-scoped rule can't
+   outscore that, so own it here on the <tr> with a selector that does. CreatureTable's
+   hover/selected <td> states layer over these. */
+.pf2e-encounter-builder .creatures-panel table.split-table tbody tr:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.05);
+}
+.pf2e-encounter-builder .creatures-panel table.split-table tbody tr:nth-child(even) {
+  background: transparent;
 }
 
 /* GM entry-point buttons injected above "Create Combat" in the Combat sidebar tab. */

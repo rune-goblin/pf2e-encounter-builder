@@ -146,6 +146,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
+    min-height: var(--peb-header-h);
     margin: 0 0 0.5rem;
   }
   .section-title {
@@ -159,6 +160,11 @@
     align-items: center;
     gap: 5px;
     width: auto;
+    box-sizing: border-box;
+    /* Cap the height so this button doesn't make the header taller than --peb-header-h
+       (Foundry's button rule sets height/min-height: var(--button-size)). */
+    height: var(--peb-header-h);
+    min-height: var(--peb-header-h);
     padding: 3px 9px;
     border: 1px solid rgba(128, 128, 128, 0.5);
     border-radius: 4px;

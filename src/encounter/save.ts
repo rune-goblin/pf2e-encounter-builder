@@ -1,4 +1,4 @@
-import { MODULE_ID } from '@/constants';
+import { MODULE_ID, ENCOUNTER_FOLDER_NAME } from '@/constants';
 import {
   adjustmentForVariant,
   dedupeKey,
@@ -9,7 +9,7 @@ import {
 import { creatureFromUuid, entryToCreature, type RawIndexEntry } from '@/data/creatures';
 import type { ActorPF2e, CombatantPF2e, EncounterPF2e, ScenePF2e, TokenDocumentPF2e } from 'foundry-pf2e';
 
-const FOLDER_NAME = 'PF2e Encounter Builder';
+const FOLDER_NAME = ENCOUNTER_FOLDER_NAME;
 const TOKENS_PER_ROW = 10;
 
 export interface SaveContext {

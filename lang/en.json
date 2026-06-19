@@ -34,11 +34,14 @@
       "size": "Size",
       "rarity": "Rarity",
       "traits": "Traits",
-      "source": "Source"
+      "source": "Source",
+      "previewEmpty": "Select a creature to preview",
+      "previewAdd": "Add"
     },
     "filters": {
       "title": "Filter Creatures",
       "remasterOnly": "Remaster only",
+      "artOnly": "With art only",
       "reset": "Reset",
       "size": "Size",
       "trait": "Trait",

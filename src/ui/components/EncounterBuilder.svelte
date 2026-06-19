@@ -56,6 +56,7 @@
   let creatureType = $state<string[]>([]);
   let rarity = $state<string[]>([]);
   let remasterOnly = $state(false);
+  let artOnly = $state(false);
 
   $effect(() => {
     loadCreatures()
@@ -219,6 +220,7 @@
         creatureTypeFilter={creatureType}
         rarityFilter={rarity}
         {remasterOnly}
+        {artOnly}
         onAdd={addCreature}
       />
 
@@ -243,6 +245,7 @@
           bind:creatureType
           bind:rarity
           bind:remasterOnly
+          bind:artOnly
         />
       </aside>
     </section>

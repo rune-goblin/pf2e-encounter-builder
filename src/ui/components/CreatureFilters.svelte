@@ -10,6 +10,7 @@
     creatureType: string[];
     rarity: string[];
     remasterOnly: boolean;
+    artOnly: boolean;
   }
 
   let {
@@ -19,6 +20,7 @@
     creatureType = $bindable(),
     rarity = $bindable(),
     remasterOnly = $bindable(),
+    artOnly = $bindable(),
   }: Props = $props();
 
   const L = (k: string): string => game.i18n.localize(`pf2e-encounter-builder.${k}`);
@@ -39,10 +41,16 @@
 <div class="refine">
   <div class="filters-header">
     <h2 class="section-title">{L('filters.title')}</h2>
-    <label class="legacy-toggle">
-      <input type="checkbox" bind:checked={remasterOnly} />
-      <span>{L('filters.remasterOnly')}</span>
-    </label>
+    <div class="toggles">
+      <label class="legacy-toggle">
+        <input type="checkbox" bind:checked={remasterOnly} />
+        <span>{L('filters.remasterOnly')}</span>
+      </label>
+      <label class="legacy-toggle">
+        <input type="checkbox" bind:checked={artOnly} />
+        <span>{L('filters.artOnly')}</span>
+      </label>
+    </div>
   </div>
 
   <Collapsible label={L('filters.size')} open count={size.length}>
@@ -117,12 +125,19 @@
     margin: 0;
     border: none;
   }
+  .toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    justify-content: flex-end;
+  }
   .legacy-toggle {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     font-size: var(--peb-text-sm);
     cursor: pointer;
+    white-space: nowrap;
   }
   .reset {
     margin-right: 6px;

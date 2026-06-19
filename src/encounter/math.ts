@@ -15,6 +15,9 @@ export type Creature = {
   source: string;
   img: string;
   remaster: boolean;
+  // True when a token-art module (via game.compendiumArt) supplies the portrait, rather than
+  // the shared system default. Drives the thumbnail and the "with art only" filter.
+  hasArt: boolean;
 };
 
 export type EncounterEntry = Creature & {
