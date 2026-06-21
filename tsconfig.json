@@ -10,9 +10,8 @@
     "forceConsistentCasingInFileNames": true,
     "sourceMap": true,
     "rootDir": "./src",
-    "baseUrl": "./src",
     "paths": {
-      "@/*": ["*"]
+      "@/*": ["./src/*"]
     },
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
