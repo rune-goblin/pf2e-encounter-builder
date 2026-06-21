@@ -1,4 +1,4 @@
-export const MODULE_ID = 'pf2e-encounter-builder';
+export const MODULE_ID = 'pf2e-encounter-builder-rg';
 
 // Actor folder the builder imports saved encounters into. Shared so the world-creature scan can
 // skip its own derived (deduped, Elite/Weak-adjusted) copies rather than list them as creatures.

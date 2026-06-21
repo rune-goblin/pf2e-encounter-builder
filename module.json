@@ -1,5 +1,5 @@
 {
-  "id": "pf2e-encounter-builder",
+  "id": "pf2e-encounter-builder-rg",
   "title": "PF2E Encounter Builder",
   "description": "A Pathfinder 2e Foundry VTT module template: compendium content plus a scripted esmodule with a Svelte 5 UI mounted in ApplicationV2.",
   "version": "0.1.0",
@@ -10,10 +10,10 @@
     }
   ],
   "esmodules": [
-    "dist/pf2e-encounter-builder.js"
+    "dist/pf2e-encounter-builder-rg.js"
   ],
   "styles": [
-    "dist/pf2e-encounter-builder.css"
+    "dist/pf2e-encounter-builder-rg.css"
   ],
   "languages": [
     {
