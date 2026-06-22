@@ -1,4 +1,4 @@
-.pf2e-encounter-builder {
+.pf2e-encounter-builder-rg {
   /* Brand palette ported from the standalone's active (teal) theme. Bright text on a dim
      border keeps badges/labels legible on a dark background; filled surfaces carry white. */
   --peb-brand-text: #83ffd7;
@@ -21,15 +21,26 @@
   line-height: 1.4;
 }
 
+/* Foundry core (foundry2.css) rings BOTH `button:focus` and `button.active` with a red outline
+   + box-shadow (--button-focus-outline-color = --color-warm-2). The var is set on `button`
+   itself, so redefining it can't win the cascade — override the consuming properties instead.
+   `.active` is the key one: our selected segment carries it permanently, not just while focused.
+   Scoping under our root class outscores core's bare `button.<state>` (0,2,1 > 0,1,1). */
+.pf2e-encounter-builder-rg button:focus,
+.pf2e-encounter-builder-rg button.active {
+  outline: none;
+  box-shadow: none;
+}
+
 /* The Svelte UI owns its own scroll regions, so the window content must hand it a
    definite height instead of scrolling as one block. Scoped to this app's root class. */
-.pf2e-encounter-builder .window-content {
+.pf2e-encounter-builder-rg .window-content {
   display: flex;
   flex-direction: column;
   overflow: hidden;
   padding: 0;
 }
-.pf2e-encounter-builder .peb-root {
+.pf2e-encounter-builder-rg .peb-root {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -40,23 +51,23 @@
    (rgba(255,255,255,0.2)) via `body.game .app table tr` — a Svelte-scoped rule can't
    outscore that, so own it here on the <tr> with a selector that does. CreatureTable's
    hover/selected <td> states layer over these. */
-.pf2e-encounter-builder .creatures-panel table.split-table tbody tr:nth-child(odd) {
+.pf2e-encounter-builder-rg .creatures-panel table.split-table tbody tr:nth-child(odd) {
   background: rgba(255, 255, 255, 0.05);
 }
-.pf2e-encounter-builder .creatures-panel table.split-table tbody tr:nth-child(even) {
+.pf2e-encounter-builder-rg .creatures-panel table.split-table tbody tr:nth-child(even) {
   background: transparent;
 }
 
 /* GM entry-point buttons injected above "Create Combat" in the Combat sidebar tab. */
-.pf2e-encounter-builder-launch {
+.pf2e-encounter-builder-rg-launch {
   display: flex;
   gap: 4px;
   margin-bottom: 4px;
 }
-.pf2e-encounter-builder-launch button {
+.pf2e-encounter-builder-rg-launch button {
   flex: 1;
 }
-.pf2e-encounter-builder-launch button:disabled {
+.pf2e-encounter-builder-rg-launch button:disabled {
   opacity: 0.5;
   cursor: default;
 }

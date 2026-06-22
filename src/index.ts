@@ -66,7 +66,7 @@ function injectLaunchButton(element: HTMLElement): void {
 
   const row = document.createElement('div');
   row.id = LAUNCH_ID;
-  row.className = 'pf2e-encounter-builder-launch';
+  row.className = `${MODULE_ID}-launch`;
 
   const builder = document.createElement('button');
   builder.type = 'button';
