@@ -12,7 +12,28 @@ export default defineConfig({
   root: 'src/',
   base: `/modules/${id}/dist/`,
   // root is src/, so point the plugin at the repo-root config (shared with svelte-check).
-  plugins: [svelte({ configFile: fileURLToPath(new URL('./svelte.config.ts', import.meta.url)) })],
+  plugins: [
+    svelte({ configFile: fileURLToPath(new URL('./svelte.config.ts', import.meta.url)) }),
+    // Dev only: module.json's `styles` makes Foundry request the built dist/<id>.css, which
+    // Vite never emits in serve mode (component + global CSS are injected via the JS entry).
+    // Answer that one request with an empty sheet so it doesn't 404 in the console; the real
+    // file is built and served normally on :30000 and in the release.
+    {
+      name: 'peb-dev-css-shim',
+      apply: 'serve',
+      configureServer(server) {
+        const cssURL = `/modules/${id}/dist/${id}.css`;
+        server.middlewares.use((req, res, next) => {
+          if (req.url && req.url.split('?')[0] === cssURL) {
+            res.setHeader('Content-Type', 'text/css');
+            res.end('');
+            return;
+          }
+          next();
+        });
+      },
+    },
+  ],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
