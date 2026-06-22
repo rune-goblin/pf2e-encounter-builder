@@ -11,7 +11,7 @@
 </script>
 
 <section class="budget">
-  <h2 class="section-title">{game.i18n.localize('pf2e-encounter-builder.budget.title')}</h2>
+  <h2 class="section-title">{game.i18n.localize('pf2e-encounter-builder-rg.budget.title')}</h2>
   <ProgressBar {value} {stages} />
 </section>
 

@@ -23,7 +23,7 @@
     artOnly = $bindable(),
   }: Props = $props();
 
-  const L = (k: string): string => game.i18n.localize(`pf2e-encounter-builder.${k}`);
+  const L = (k: string): string => game.i18n.localize(`pf2e-encounter-builder-rg.${k}`);
 
   let traitSearch = $state('');
 

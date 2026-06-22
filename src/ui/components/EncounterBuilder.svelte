@@ -18,7 +18,7 @@
   import EncounterList from './EncounterList.svelte';
   import EncounterBudget from './EncounterBudget.svelte';
 
-  const L = (k: string): string => game.i18n.localize(`pf2e-encounter-builder.${k}`);
+  const L = (k: string): string => game.i18n.localize(`pf2e-encounter-builder-rg.${k}`);
 
   let data = $state<CreatureIndex | null>(null);
   let loadError = $state(false);

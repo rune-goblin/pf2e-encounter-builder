@@ -23,7 +23,7 @@
     onAdd,
   }: Props = $props();
 
-  const L = (k: string): string => game.i18n.localize(`pf2e-encounter-builder.${k}`);
+  const L = (k: string): string => game.i18n.localize(`pf2e-encounter-builder-rg.${k}`);
 
   let name = $state('');
   let minLevel = $state('');
@@ -118,7 +118,7 @@
             <input type="number" bind:value={maxLevel} />
           </label>
           <div class="row-count">
-            {game.i18n.format('pf2e-encounter-builder.table.matches', { count: filtered.length })}
+            {game.i18n.format('pf2e-encounter-builder-rg.table.matches', { count: filtered.length })}
           </div>
         </div>
       </div>
@@ -134,7 +134,7 @@
           <div class="preview-info">
             <div class="preview-name">{sel.name}</div>
             <div class="preview-meta">
-              {game.i18n.format('pf2e-encounter-builder.encounter.levelShort', { level: sel.level })} · {sizeLabel(sel.size)} · {cap(sel.rarity)}
+              {game.i18n.format('pf2e-encounter-builder-rg.encounter.levelShort', { level: sel.level })} · {sizeLabel(sel.size)} · {cap(sel.rarity)}
             </div>
             <div class="preview-traits">{sel.traits.join(', ')}</div>
             <div class="preview-actions">

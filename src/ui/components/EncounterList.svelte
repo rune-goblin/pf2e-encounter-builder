@@ -29,7 +29,7 @@
     onLoad,
   }: Props = $props();
 
-  const L = (k: string): string => game.i18n.localize(`pf2e-encounter-builder.${k}`);
+  const L = (k: string): string => game.i18n.localize(`pf2e-encounter-builder-rg.${k}`);
 
   // Display order Weak/Base/Elite, mapped to the variant codes 1/0/2 used by the math.
   const SEGMENTS: { variant: Variant; key: string }[] = [
@@ -71,10 +71,10 @@
   </div>
   <div class="encounter-panel" class:drop-active={dropActive} style:--panel-border={stageColor}>
     <div class="totals" style:background={stageColor} style:color={totalsTextColor}>
-      <strong>{game.i18n.format('pf2e-encounter-builder.encounter.totalCost', { xp: xpCost })}</strong>
+      <strong>{game.i18n.format('pf2e-encounter-builder-rg.encounter.totalCost', { xp: xpCost })}</strong>
       {#if partySize > 0 && partySize !== 4}
         <small>
-          {game.i18n.format('pf2e-encounter-builder.encounter.xpAward', {
+          {game.i18n.format('pf2e-encounter-builder-rg.encounter.xpAward', {
             xp: Math.floor((xpCost * 4) / partySize),
           })}
         </small>
@@ -89,7 +89,7 @@
           <button type="button" class="count-btn minus" onclick={() => decrement(i)} aria-label="−">−</button>
 
           <div class="name">{item.count} × {item.name}</div>
-          <div class="xp">{game.i18n.format('pf2e-encounter-builder.encounter.xpTotal', { xp: item.cost })}</div>
+          <div class="xp">{game.i18n.format('pf2e-encounter-builder-rg.encounter.xpTotal', { xp: item.cost })}</div>
 
           <div class="variant-block">
             <div class="segmented" role="group">
@@ -102,7 +102,7 @@
                 >{L(`encounter.${seg.key}`)}</button>
               {/each}
             </div>
-            <div class="efflevel" style:grid-column={activeIdx + 1}>{game.i18n.format('pf2e-encounter-builder.encounter.levelShort', { level: item.effLevel })}</div>
+            <div class="efflevel" style:grid-column={activeIdx + 1}>{game.i18n.format('pf2e-encounter-builder-rg.encounter.levelShort', { level: item.effLevel })}</div>
           </div>
 
           {#if item.band === 'below'}
