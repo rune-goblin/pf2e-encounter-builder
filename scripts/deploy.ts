@@ -12,7 +12,8 @@ import { execFileSync } from 'node:child_process';
 
 const repo = process.cwd();
 const home = homedir();
-const ID = 'pf2e-encounter-builder';
+// Dir name must equal module.json's id (Foundry validates it) — derive, don't hardcode.
+const ID = (JSON.parse(readFileSync(join(repo, 'module.json'), 'utf8')) as { id: string }).id;
 const CONFIG = join(repo, '.dev-paths.json');
 
 // Same resolution order as scripts/setup.ts: env override, cached dev path, then the

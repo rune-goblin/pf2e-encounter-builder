@@ -20,7 +20,9 @@ import { ownerFromOrigin, authorName, isValidOwner } from './git-identity.ts';
 
 const repo = process.cwd();
 const home = homedir();
-const ID = 'pf2e-encounter-builder';
+// The Foundry install dir name MUST equal module.json's id (Foundry validates it), so derive
+// it from the manifest rather than hardcoding — keeps `setup`/`deploy` correct across a rename.
+const ID = (JSON.parse(readFileSync(join(repo, 'module.json'), 'utf8')) as { id: string }).id;
 
 const PF2E_REPO = 'https://github.com/foundryvtt/pf2e.git';
 const CONFIG = join(repo, '.dev-paths.json');

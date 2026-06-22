@@ -9,7 +9,7 @@ declare global {
   var ui: any;
 }
 
-export const MODULE_ID = 'pf2e-encounter-builder';
+export const MODULE_ID = 'pf2e-encounter-builder-rg';
 
 /** Drive Foundry's /join screen to log this context in as a specific user. */
 export async function joinAs(page: Page, userId: string, password = ''): Promise<void> {
