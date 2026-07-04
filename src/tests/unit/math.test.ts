@@ -5,7 +5,10 @@ import {
   computeDelta,
   dedupeKey,
   effectiveLevel,
+  isTroop,
+  makeBarStages,
   makeXpBudget,
+  reinforcedBudget,
   threatBand,
   variantForAdjustment,
   type EncounterEntry,
@@ -115,5 +118,59 @@ describe('variant helpers', () => {
     expect(dedupeKey(uuid, 1)).toBe(`${uuid}|weak`);
     expect(dedupeKey(uuid, 2)).toBe(`${uuid}|elite`);
     expect(new Set([dedupeKey(uuid, 0), dedupeKey(uuid, 1), dedupeKey(uuid, 2)]).size).toBe(3);
+  });
+});
+
+describe('reinforcedBudget', () => {
+  it('raises every tier by the allied XP (Rules 3439)', () => {
+    expect(reinforcedBudget([40, 60, 80, 120, 160], 100)).toEqual([140, 160, 180, 220, 260]);
+  });
+
+  it('is the identity with no allies', () => {
+    expect(reinforcedBudget([40, 60, 80, 120, 160], 0)).toEqual([40, 60, 80, 120, 160]);
+  });
+});
+
+describe('makeBarStages', () => {
+  it('places chips at the base budget ratios — 25/37.5/50/75/100 — with a pinned pre-Trivial stage', () => {
+    const stages = makeBarStages([40, 60, 80, 120, 160]);
+    expect(stages.map((s) => s.at)).toEqual([0, 25, 37.5, 50, 75, 100]);
+    expect(stages[1].label).toBe('Trivial 40');
+    expect(stages[5].label).toBe('Extreme 160');
+  });
+
+  it('re-derives chip positions when a flat ally offset shifts the budget', () => {
+    const ats = makeBarStages([140, 160, 180, 220, 260]).map((s) => s.at);
+    expect(ats[0]).toBe(0); // pre-Trivial stage stays pinned
+    expect(ats[1]).toBeCloseTo((140 / 260) * 100);
+    expect(ats[3]).toBeCloseTo((180 / 260) * 100);
+    expect(ats[5]).toBe(100);
+    // no longer the fixed 25 — the whole scale is pushed right by the reinforcement
+    expect(ats[1]).toBeGreaterThan(50);
+  });
+});
+
+describe('isTroop', () => {
+  it('detects the PF2e troop trait', () => {
+    expect(isTroop({ traits: ['undead', 'troop', 'zombie'] })).toBe(true);
+    expect(isTroop({ traits: ['giant'] })).toBe(false);
+    expect(isTroop({ traits: [] })).toBe(false);
+  });
+});
+
+describe('side-aware budgeting', () => {
+  // The Svelte layer sums each side; this pins the arithmetic the skirmish budget rests on:
+  // four 7th-level PCs, one 7th-level ally troop → +40 to the budget the enemies are rated against.
+  it('sums enemy and ally XP independently via computeCost', () => {
+    const partyLevel = 7;
+    const entries = [
+      { level: 8, variant: 0, side: 'enemy' },
+      { level: 6, variant: 0, side: 'enemy' },
+      { level: 7, variant: 0, side: 'ally' },
+    ] as EncounterEntry[];
+    const sideXp = (side: string) =>
+      entries.filter((e) => e.side === side).reduce((s, e) => s + computeCost(e, partyLevel), 0);
+    expect(sideXp('enemy')).toBe(60 + 30); // lvl8 +1 → 60, lvl6 −1 → 30
+    expect(sideXp('ally')).toBe(40); // party-level troop
   });
 });

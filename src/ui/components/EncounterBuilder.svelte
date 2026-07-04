@@ -7,9 +7,11 @@
     effectiveLevel,
     makeBarStages,
     makeXpBudget,
+    reinforcedBudget,
     threatBand,
     type Creature,
     type EncounterEntry,
+    type EntrySide,
   } from '@/encounter/math';
   import { creatureFromUuid, loadCreatures, type CreatureIndex } from '@/data/creatures';
   import { encounterFromCombat, saveEncounter } from '@/encounter/save';
@@ -49,6 +51,7 @@
   }
 
   let encounter = $state<EncounterEntry[]>([]);
+  let skirmish = $state(Boolean(game.settings.get(MODULE_ID, 'skirmish')));
   let saving = $state(false);
 
   let size = $state<string[]>([]);
@@ -73,6 +76,9 @@
   $effect(() => {
     void game.settings.set(MODULE_ID, 'partyLevel', partyLevel);
   });
+  $effect(() => {
+    void game.settings.set(MODULE_ID, 'skirmish', skirmish);
+  });
 
   const enriched = $derived(
     encounter.map((e) => {
@@ -85,16 +91,24 @@
       };
     }),
   );
-  const xpCost = $derived(enriched.reduce((sum, e) => sum + e.cost, 0));
-  const xpBudget = $derived(makeXpBudget(partySize));
+  const enemyEnriched = $derived(enriched.filter((e) => e.side === 'enemy'));
+  const allyEnriched = $derived(enriched.filter((e) => e.side === 'ally'));
+  const enemyXp = $derived(enemyEnriched.reduce((sum, e) => sum + e.cost, 0));
+  // Allied troops raise the budget only in skirmish mode; off, any stray allies are ignored.
+  const allyXp = $derived(skirmish ? allyEnriched.reduce((sum, e) => sum + e.cost, 0) : 0);
+  const xpBudget = $derived(reinforcedBudget(makeXpBudget(partySize), allyXp));
   const barStages = $derived(makeBarStages(xpBudget));
-  const barValue = $derived(Math.min(100, (xpCost / xpBudget[4]) * 100));
+  const barValue = $derived(Math.min(100, (enemyXp / xpBudget[4]) * 100));
   const stageIndex = $derived(activeStageIndex(barStages, barValue));
   const activeStage = $derived(barStages[stageIndex]);
   const totalsTextColor = $derived(stageIndex >= blackTextSwitchIndex(barStages) ? '#fff' : '#111');
 
-  function addCreature(c: Creature) {
-    encounter = [...encounter, { ...c, variant: 0, count: 1, cost: 0 }];
+  function addCreature(c: Creature, side: EntrySide = 'enemy') {
+    encounter = [...encounter, { ...c, variant: 0, count: 1, cost: 0, side }];
+  }
+
+  function addAlly(c: Creature) {
+    addCreature(c, 'ally');
   }
 
   let dragActive = $state(false);
@@ -165,10 +179,11 @@
   }
 
   async function save() {
-    if (encounter.length === 0) return;
+    const toSave = skirmish ? encounter : encounter.filter((e) => e.side === 'enemy');
+    if (toSave.length === 0) return;
     saving = true;
     try {
-      const result = await saveEncounter(encounter, { partySize, partyLevel });
+      const result = await saveEncounter(toSave, { partySize, partyLevel });
       ui.notifications.info(
         game.i18n.format(`${MODULE_ID}.notifications.saved`, { count: result.combatantCount }),
       );
@@ -208,9 +223,23 @@
         <i class="fa-solid fa-users" aria-hidden="true"></i>
         {L('party.fromParty')}
       </button>
+      <div class="field skirmish-field">
+        <span>{L('party.encounterType')}</span>
+        <button
+          type="button"
+          class="skirmish-toggle"
+          class:on={skirmish}
+          aria-pressed={skirmish}
+          title={L('party.skirmishHint')}
+          onclick={() => (skirmish = !skirmish)}
+        >
+          <span class="sw" aria-hidden="true"></span>
+          {L('party.skirmish')}
+        </button>
+      </div>
     </section>
 
-    <EncounterBudget value={barValue} stages={barStages} />
+    <EncounterBudget value={barValue} stages={barStages} {allyXp} />
 
     <section class="main">
       <CreatureTable
@@ -221,23 +250,38 @@
         rarityFilter={rarity}
         {remasterOnly}
         {artOnly}
+        {skirmish}
         onAdd={addCreature}
+        onAddAlly={addAlly}
       />
 
       <aside class="right-col">
         <EncounterList
           bind:encounter
           {enriched}
-          {xpCost}
+          side="enemy"
+          xp={enemyXp}
           {partySize}
           stageColor={activeStage.color}
           {totalsTextColor}
+          showDivider
           {saving}
           {loading}
           dropActive={dragActive}
           onSave={save}
           onLoad={load}
         />
+        {#if skirmish}
+          <EncounterList
+            bind:encounter
+            {enriched}
+            side="ally"
+            xp={allyXp}
+            {partySize}
+            stageColor={activeStage.color}
+            {totalsTextColor}
+          />
+        {/if}
         <CreatureFilters
           options={data.options}
           bind:size
@@ -301,6 +345,59 @@
   .from-party:hover {
     background: var(--peb-brand-surface);
     color: var(--peb-on-brand);
+  }
+  /* Skirmish toggle rides in the controls row, pushed to the far end. */
+  .skirmish-field {
+    width: auto;
+    margin-left: auto;
+  }
+  .skirmish-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    width: auto;
+    height: min-content;
+    padding: 5px 10px;
+    border: 1px solid rgba(128, 128, 128, 0.5);
+    border-radius: 4px;
+    background: rgba(128, 128, 128, 0.15);
+    color: inherit;
+    font-size: var(--peb-text-sm);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .skirmish-toggle .sw {
+    width: 30px;
+    height: 16px;
+    border-radius: 100px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    position: relative;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .skirmish-toggle .sw::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #b7b8ad;
+    transition: left 0.2s ease, background 0.2s ease;
+  }
+  .skirmish-toggle.on {
+    border-color: var(--peb-brand-border);
+    background: var(--peb-brand-surface-low);
+    color: var(--peb-brand-text);
+  }
+  .skirmish-toggle.on .sw {
+    background: var(--peb-brand-surface);
+    border-color: var(--peb-brand-border);
+  }
+  .skirmish-toggle.on .sw::after {
+    left: 15px;
+    background: var(--peb-brand-text);
   }
   .main {
     flex: 1;

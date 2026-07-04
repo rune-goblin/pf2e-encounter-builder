@@ -9,7 +9,9 @@
     rarityFilter: string[];
     remasterOnly: boolean;
     artOnly: boolean;
+    skirmish: boolean;
     onAdd: (creature: Creature) => void;
+    onAddAlly: (creature: Creature) => void;
   }
 
   let {
@@ -20,7 +22,9 @@
     rarityFilter,
     remasterOnly,
     artOnly,
+    skirmish,
     onAdd,
+    onAddAlly,
   }: Props = $props();
 
   const L = (k: string): string => game.i18n.localize(`pf2e-encounter-builder-rg.${k}`);
@@ -141,6 +145,11 @@
               <button type="button" class="preview-btn add" title={L('table.add')} onclick={() => onAdd(sel)}>
                 <i class="fa-solid fa-plus" aria-hidden="true"></i>{L('table.previewAdd')}
               </button>
+              {#if skirmish}
+                <button type="button" class="preview-btn ally" title={L('table.addAsAllyHint')} onclick={() => onAddAlly(sel)}>
+                  <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>{L('table.addAsAlly')}
+                </button>
+              {/if}
               <button
                 type="button"
                 class="preview-btn"
@@ -447,6 +456,12 @@
     flex: 1;
     background: var(--peb-brand-surface);
     color: var(--peb-on-brand);
+  }
+  /* Allied-troop add: a distinct friendly-blue so it reads apart from the brand-teal "Add". */
+  .preview-btn.ally {
+    background: #1d4463;
+    border-color: #2b5f86;
+    color: #dff0ff;
   }
   .preview-btn:hover {
     filter: brightness(1.12);

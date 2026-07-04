@@ -1,7 +1,7 @@
 import './styles.css';
 import { MODULE_ID } from './constants';
 import { EncounterBuilderApp } from './ui/EncounterBuilderApp';
-import { addEncounterToScene, missingFromScene, saveEncounter } from './encounter/save';
+import { addEncounterToScene, encounterFromCombat, missingFromScene, saveEncounter } from './encounter/save';
 
 const LAUNCH_ID = `${MODULE_ID}-launch`;
 const ADD_TO_SCENE_CLASS = `${MODULE_ID}-add-to-scene`;
@@ -13,6 +13,7 @@ interface ModuleApi {
   open: () => void;
   saveEncounter: typeof saveEncounter;
   addEncounterToScene: typeof addEncounterToScene;
+  encounterFromCombat: typeof encounterFromCombat;
 }
 
 async function handleAddToScene(): Promise<void> {
@@ -99,6 +100,13 @@ Hooks.once('init', () => {
     type: Number,
     default: 1,
   });
+  game.settings.register(MODULE_ID, 'skirmish', {
+    name: `${MODULE_ID}.party.skirmish`,
+    scope: 'client',
+    config: false,
+    type: Boolean,
+    default: false,
+  });
 });
 
 Hooks.on('renderCombatTracker', (_app: unknown, element: HTMLElement) => {
@@ -130,6 +138,7 @@ Hooks.once('ready', () => {
     open: () => EncounterBuilderApp.open(),
     saveEncounter,
     addEncounterToScene,
+    encounterFromCombat,
   };
   // `api` is the Foundry convention for a public API, but isn't a typed field on Module.
   if (module) (module as { api?: ModuleApi }).api = api;

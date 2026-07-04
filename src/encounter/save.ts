@@ -4,6 +4,7 @@ import {
   dedupeKey,
   variantForAdjustment,
   type EncounterEntry,
+  type EntrySide,
   type Variant,
 } from '@/encounter/math';
 import { creatureFromUuid, entryToCreature, type RawIndexEntry } from '@/data/creatures';
@@ -71,9 +72,25 @@ function centerTokens(scene: ScenePF2e, tokens: Placeable[]): void {
 interface Group {
   uuid: string;
   variant: Variant;
+  side: EntrySide;
   name: string;
   count: number;
   actor?: ActorPF2e;
+}
+
+// Allied troops deploy as friendly tokens fighting beside the party; everything else is hostile.
+// Return type is inferred so it stays the branded TokenDisposition a token source expects.
+function dispositionFor(side: EntrySide) {
+  return side === 'ally' ? CONST.TOKEN_DISPOSITIONS.FRIENDLY : CONST.TOKEN_DISPOSITIONS.HOSTILE;
+}
+
+// Recover a combatant's side on load/deploy: the module flag stamped at save time is
+// authoritative; failing that (a hand-built combat) read the token/prototype disposition.
+function sideForCombatant(combatant: CombatantPF2e, actor: ActorPF2e): EntrySide {
+  const flag = combatant.getFlag(MODULE_ID, 'side');
+  if (flag === 'ally' || flag === 'enemy') return flag;
+  const disposition = combatant.token?.disposition ?? actor.prototypeToken?.disposition;
+  return disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY ? 'ally' : 'enemy';
 }
 
 function t(key: string, data?: Record<string, string | number>): string {
@@ -82,16 +99,18 @@ function t(key: string, data?: Record<string, string | number>): string {
     : game.i18n.localize(`${MODULE_ID}.${key}`);
 }
 
-// Collapse identical rows (same creature + adjustment) into one group with a summed count,
-// so the same actor is imported once and the deploy loop knows the total token count.
+// Collapse identical rows (same creature + adjustment + side) into one group with a summed
+// count, so the same actor is imported once and the deploy loop knows the total token count.
+// Side is in the key too: an ally and an enemy copy of one creature are separate combatants
+// (different disposition), even though ensureActors still imports a single shared actor.
 function groupEntries(entries: EncounterEntry[]): Group[] {
   const map = new Map<string, Group>();
   for (const e of entries) {
     if (e.count <= 0) continue;
-    const key = dedupeKey(e.uuid, e.variant);
+    const key = `${dedupeKey(e.uuid, e.variant)}|${e.side}`;
     const g = map.get(key);
     if (g) g.count += e.count;
-    else map.set(key, { uuid: e.uuid, variant: e.variant, name: e.name, count: e.count });
+    else map.set(key, { uuid: e.uuid, variant: e.variant, side: e.side, name: e.name, count: e.count });
   }
   return [...map.values()];
 }
@@ -111,16 +130,20 @@ async function ensureFolder(): Promise<foundry.documents.Folder> {
 async function ensureActors(groups: Group[], folder: foundry.documents.Folder): Promise<void> {
   const ActorClass = getDocumentClass('Actor');
 
+  // Side is part of the actor key, not just the combatant: pf2e derives a token's disposition from
+  // its actor's alliance (party → friendly, opposition → hostile) and ignores the token's own
+  // disposition, so an ally and an enemy copy of one creature must be distinct actors.
   const byKey = new Map<string, ActorPF2e>();
   for (const actor of game.actors.filter((a) => a.folder?.id === folder.id)) {
     const sourceId = actor.sourceId;
     if (!sourceId) continue;
     const adjustment = actor.isOfType('npc') ? actor.system.attributes.adjustment : null;
-    byKey.set(`${sourceId}|${adjustment ?? 'base'}`, actor);
+    const side: EntrySide = actor.isOfType('npc') && actor.system.details.alliance === 'party' ? 'ally' : 'enemy';
+    byKey.set(`${sourceId}|${adjustment ?? 'base'}|${side}`, actor);
   }
 
   for (const g of groups) {
-    const key = dedupeKey(g.uuid, g.variant);
+    const key = `${dedupeKey(g.uuid, g.variant)}|${g.side}`;
     const reuse = byKey.get(key);
     if (reuse) {
       g.actor = reuse;
@@ -138,7 +161,12 @@ async function ensureActors(groups: Group[], folder: foundry.documents.Folder): 
     if (!actor) continue;
 
     const adjustment = adjustmentForVariant(g.variant);
-    if (actor.isOfType('npc') && adjustment) await actor.applyAdjustment(adjustment);
+    if (actor.isOfType('npc')) {
+      if (adjustment) await actor.applyAdjustment(adjustment);
+      // Allies fight on the party's side: set alliance so pf2e colors their tokens friendly and
+      // (usefully) excludes them from its encounter threat analysis. Enemies stay opposition.
+      await actor.update({ 'system.details.alliance': g.side === 'ally' ? 'party' : 'opposition' });
+    }
     g.actor = actor;
     byKey.set(key, actor);
   }
@@ -161,8 +189,13 @@ export async function saveEncounter(entries: EncounterEntry[], _ctx: SaveContext
   const combat = await getDocumentClass('Combat').create({ scene: null });
   if (!combat) throw new Error(`${MODULE_ID} | could not create combat`);
 
+  // Stamp the side on each combatant so load round-trips it and Add to Scene can set the token's
+  // disposition — a scene-less combatant has no token to read it from yet.
   const combatants = deployable.flatMap((g) =>
-    Array.from({ length: g.count }, () => ({ actorId: g.actor.id })),
+    Array.from({ length: g.count }, () => ({
+      actorId: g.actor.id,
+      flags: { [MODULE_ID]: { side: g.side } },
+    })),
   );
   await combat.createEmbeddedDocuments('Combatant', combatants);
   await combat.activate();
@@ -194,10 +227,11 @@ export async function encounterFromCombat(combat: EncounterPF2e): Promise<Encoun
     if (!creature) continue;
     const adjustment = actor.isOfType('npc') ? actor.system.attributes.adjustment : null;
     const variant = variantForAdjustment(adjustment);
-    const key = dedupeKey(creature.uuid, variant);
+    const side = sideForCombatant(c, actor);
+    const key = `${dedupeKey(creature.uuid, variant)}|${side}`;
     const existing = groups.get(key);
     if (existing) existing.count += 1;
-    else groups.set(key, { ...creature, variant, count: 1, cost: 0 });
+    else groups.set(key, { ...creature, variant, side, count: 1, cost: 0 });
   }
   return [...groups.values()];
 }
@@ -225,7 +259,12 @@ export async function addEncounterToScene(combat: EncounterPF2e, scene: ScenePF2
   for (const c of pending) {
     tokenDocs.push(await c.actor!.getTokenDocument());
   }
-  const tokenSources = tokenDocs.map((td) => td.toObject());
+  const tokenSources = tokenDocs.map((td, i) => {
+    const source = td.toObject();
+    // Allied troops read as friendly (blue) on the map; enemies stay hostile.
+    source.disposition = dispositionFor(sideForCombatant(pending[i], pending[i].actor!));
+    return source;
+  });
   centerTokens(scene, tokenSources);
   const tokens = await scene.createEmbeddedDocuments('Token', tokenSources);
 

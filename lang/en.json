@@ -13,10 +13,14 @@
       "size": "Party size",
       "level": "Party level",
       "fromParty": "From party",
-      "fromPartyHint": "Fill size and level from the active party"
+      "fromPartyHint": "Fill size and level from the active party",
+      "encounterType": "Encounter type",
+      "skirmish": "Skirmish",
+      "skirmishHint": "Skirmish encounter: add allied troops the PCs bring to the fight — their XP raises the budget the enemy side is measured against."
     },
     "budget": {
-      "title": "Encounter Budget"
+      "title": "Encounter Budget",
+      "reinforced": "Reinforced by allies: +{xp} XP"
     },
     "table": {
       "title": "Creatures",
@@ -36,7 +40,9 @@
       "traits": "Traits",
       "source": "Source",
       "previewEmpty": "Select a creature to preview",
-      "previewAdd": "Add"
+      "previewAdd": "Add",
+      "addAsAlly": "Ally",
+      "addAsAllyHint": "Add to the PCs' allied troops"
     },
     "filters": {
       "title": "Filter Creatures",
@@ -54,6 +60,12 @@
     },
     "encounter": {
       "title": "Encounter",
+      "allies": "Allied Troops",
+      "alliedStrength": "Allied strength: {xp} XP",
+      "addsToBudget": "Adds to budget: +{xp} XP",
+      "alliesEmpty": "No allied troops yet — select a troop and use the Ally button to add the PCs' reinforcements.",
+      "troopsGroup": "Troops",
+      "creaturesGroup": "Creatures",
       "totalCost": "Total encounter cost: {xp} XP",
       "xpAward": "XP award: {xp}",
       "empty": "No creatures yet — add from the table, or drag one in from the sidebar or compendium browser.",

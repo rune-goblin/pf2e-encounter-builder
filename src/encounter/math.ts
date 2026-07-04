@@ -5,6 +5,10 @@
 export type Variant = 0 | 1 | 2;
 export type Adjustment = 'elite' | 'weak' | null;
 
+// Which side of a skirmish an entry stands on. Enemies spend the XP budget; allied troops the
+// PCs bring raise it (AoN Rules 3439). Non-skirmish encounters are all 'enemy'.
+export type EntrySide = 'enemy' | 'ally';
+
 export type Creature = {
   uuid: string;
   name: string;
@@ -24,6 +28,7 @@ export type EncounterEntry = Creature & {
   variant: Variant;
   count: number;
   cost: number;
+  side: EntrySide;
 };
 
 export type FilterOptions = {
@@ -74,6 +79,12 @@ export const RARITIES = ['common', 'uncommon', 'rare', 'unique'] as const;
 export function rarityRank(r: string): number {
   const i = (RARITIES as readonly string[]).indexOf(r);
   return i === -1 ? RARITIES.length : i;
+}
+
+// PF2e troops carry the 'troop' trait (system.traits.value), so no extra data is needed to
+// tell a troop from an ordinary NPC — it drives the enemy list's Troops/Creatures divider.
+export function isTroop(c: Pick<Creature, 'traits'>): boolean {
+  return c.traits.includes('troop');
 }
 
 export function adjustmentForVariant(variant: Variant): Adjustment {
@@ -166,14 +177,25 @@ export function makeXpBudget(partySize: number): number[] {
   return [40 + 10 * extra, 60 + 15 * extra, 80 + 20 * extra, 120 + 30 * extra, 160 + 40 * extra];
 }
 
+// Skirmish: allied troops the PCs field raise the whole budget by their XP value (Rules 3439),
+// so the enemy side is measured against the higher thresholds. allyXp 0 is the identity.
+export function reinforcedBudget(xpBudget: number[], allyXp: number): number[] {
+  return xpBudget.map((t) => t + allyXp);
+}
+
 export function makeBarStages(xpBudget: number[]): BarStage[] {
+  // Chip positions are the tiers' share of the Extreme budget, not fixed percentages: the base
+  // budget's constant ratios happen to give 25/37.5/50/75/100, but a flat skirmish offset breaks
+  // that, so a threshold's mark must track budget[i]/budget[4] to stay under the fill it gates.
+  const extreme = xpBudget[4];
+  const at = (v: number): number => (extreme > 0 ? (v / extreme) * 100 : 0);
   return [
-    { at: 0,    color: '#81d4fa' },
-    { at: 25,   color: '#66bb6a', label: `Trivial ${xpBudget[0]}` },
-    { at: 37.5, color: '#2e7d32', label: `Low ${xpBudget[1]}` },
-    { at: 50,   color: '#b05600', label: `Moderate ${xpBudget[2]}` },
-    { at: 75,   color: '#e53935', label: `Severe ${xpBudget[3]}` },
-    { at: 100,  color: '#8b0000', label: `Extreme ${xpBudget[4]}` },
+    { at: 0,             color: '#81d4fa' },
+    { at: at(xpBudget[0]), color: '#66bb6a', label: `Trivial ${xpBudget[0]}` },
+    { at: at(xpBudget[1]), color: '#2e7d32', label: `Low ${xpBudget[1]}` },
+    { at: at(xpBudget[2]), color: '#b05600', label: `Moderate ${xpBudget[2]}` },
+    { at: at(xpBudget[3]), color: '#e53935', label: `Severe ${xpBudget[3]}` },
+    { at: 100,           color: '#8b0000', label: `Extreme ${xpBudget[4]}` },
   ];
 }
 
