@@ -96,7 +96,8 @@
       "addToSceneError": "Could not add the encounter to the scene.",
       "noParty": "No active party found — assign one in the Actors directory.",
       "dropNotCreature": "Only NPC creatures can be added — that wasn't one.",
-      "dropFailed": "Could not add the dropped creature."
+      "dropFailed": "Could not add the dropped creature.",
+      "compendiaLoadFailed": "{count} creature compendium(s) failed to load — some creatures may be missing. Reopen to retry."
     }
   }
 }

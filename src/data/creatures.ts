@@ -1,5 +1,5 @@
 import { CREATURE_TYPES, RARITIES, SIZES, type Creature, type FilterOptions } from '@/encounter/math';
-import { ENCOUNTER_FOLDER_NAME } from '@/constants';
+import { ENCOUNTER_FOLDER_NAME, MODULE_ID } from '@/constants';
 
 // Index fields mirror PF2e's own bestiary tab (compendium-browser/tabs/bestiary.ts) plus
 // publication.remaster for the Remaster-only filter.
@@ -186,16 +186,41 @@ export async function loadCreatures(force = false): Promise<CreatureIndex> {
     (p) => p.documentName === 'Actor' && p.testUserPermission(game.user, 'LIMITED'),
   );
   const compendium: Creature[] = [];
+  let failed = 0;
   for (const pack of packs) {
-    const index = await pack.getIndex({ fields: INDEX_FIELDS });
-    for (const entry of index) {
-      const creature = entryToCreature(entry as RawIndexEntry);
-      if (creature) compendium.push(applyArt(creature));
+    try {
+      const index = await pack.getIndex({ fields: INDEX_FIELDS });
+      // An index whose entries lack `system` was built with the wrong fields (mirrors PF2e's
+      // own compendium-browser guard): every entry would fail entryToCreature, so flag it as a
+      // failure rather than silently contributing nothing.
+      const first = index.contents.at(0) as RawIndexEntry | undefined;
+      if (first && !first.system) {
+        console.warn(`${MODULE_ID} | pack ${pack.collection} indexed without system fields — skipped`);
+        failed += 1;
+        continue;
+      }
+      for (const entry of index) {
+        const creature = entryToCreature(entry as RawIndexEntry);
+        if (creature) compendium.push(applyArt(creature));
+      }
+    } catch (err) {
+      // One broken/incompatible/locked bestiary pack must not blank the entire browse list.
+      console.warn(`${MODULE_ID} | failed to index pack ${pack.collection}`, err);
+      failed += 1;
     }
   }
 
   const creatures = mergeCreatures(world, compendium).sort((a, b) => a.name.localeCompare(b.name));
+  const result = { creatures, options: deriveOptions(creatures) };
 
-  cache = { creatures, options: deriveOptions(creatures) };
-  return cache;
+  // A pack failure is usually transient (locked LevelDB, a momentary server hiccup, a pack still
+  // migrating). Only freeze a fully-successful read for the session; a degraded read self-heals on
+  // the next open instead of leaving the GM stuck on "world creatures only" until Foundry reloads.
+  if (failed > 0) {
+    ui.notifications?.warn(game.i18n.format(`${MODULE_ID}.notifications.compendiaLoadFailed`, { count: failed }));
+    return result;
+  }
+
+  cache = result;
+  return result;
 }
