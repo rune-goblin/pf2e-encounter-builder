@@ -48,6 +48,7 @@
       "title": "Filter Creatures",
       "remasterOnly": "Remaster only",
       "artOnly": "With art only",
+      "troopsOnly": "Troops only",
       "reset": "Reset",
       "size": "Size",
       "trait": "Trait",

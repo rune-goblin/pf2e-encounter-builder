@@ -60,6 +60,7 @@
   let rarity = $state<string[]>([]);
   let remasterOnly = $state(false);
   let artOnly = $state(false);
+  let troopsOnly = $state(false);
 
   $effect(() => {
     loadCreatures()
@@ -251,6 +252,7 @@
         {remasterOnly}
         {artOnly}
         {skirmish}
+        {troopsOnly}
         onAdd={addCreature}
         onAddAlly={addAlly}
       />
@@ -290,6 +292,8 @@
           bind:rarity
           bind:remasterOnly
           bind:artOnly
+          {skirmish}
+          bind:troopsOnly
         />
       </aside>
     </section>

@@ -47,6 +47,15 @@
   flex-direction: column;
 }
 
+/* The column chooser's menu is absolutely positioned in the header cell and drops out of the
+   one-row header. `overflow` applies to `table` and table cells (not thead/tr), and Foundry/pf2e
+   core set it on those elements — clipping the menu at the header row. A Svelte-scoped class can't
+   outscore core's element rules, so force it visible here with root-scoped specificity. */
+.pf2e-encounter-builder-rg .creatures-panel .head-table-wrap .split-table,
+.pf2e-encounter-builder-rg .creatures-panel .chooser-cell-rg {
+  overflow: visible;
+}
+
 /* Creature-table row striping. Foundry core paints `table tr:nth-child(even)` bright
    (rgba(255,255,255,0.2)) via `body.game .app table tr` — a Svelte-scoped rule can't
    outscore that, so own it here on the <tr> with a selector that does. CreatureTable's

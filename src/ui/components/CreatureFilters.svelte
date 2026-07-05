@@ -11,6 +11,8 @@
     rarity: string[];
     remasterOnly: boolean;
     artOnly: boolean;
+    skirmish: boolean;
+    troopsOnly: boolean;
   }
 
   let {
@@ -21,6 +23,8 @@
     rarity = $bindable(),
     remasterOnly = $bindable(),
     artOnly = $bindable(),
+    skirmish,
+    troopsOnly = $bindable(),
   }: Props = $props();
 
   const L = (k: string): string => game.i18n.localize(`pf2e-encounter-builder-rg.${k}`);
@@ -42,6 +46,12 @@
   <div class="filters-header">
     <h2 class="section-title">{L('filters.title')}</h2>
     <div class="toggles">
+      {#if skirmish}
+        <label class="legacy-toggle">
+          <input type="checkbox" bind:checked={troopsOnly} />
+          <span>{L('filters.troopsOnly')}</span>
+        </label>
+      {/if}
       <label class="legacy-toggle">
         <input type="checkbox" bind:checked={remasterOnly} />
         <span>{L('filters.remasterOnly')}</span>

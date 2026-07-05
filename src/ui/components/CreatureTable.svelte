@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { sizeLabel, type Creature, type ColumnKey } from '@/encounter/math';
+  import { isTroop, sizeLabel, type Creature, type ColumnKey } from '@/encounter/math';
+  import ColumnChooser from './ColumnChooser.svelte';
 
   interface Props {
     creatures: Creature[];
@@ -10,6 +11,7 @@
     remasterOnly: boolean;
     artOnly: boolean;
     skirmish: boolean;
+    troopsOnly: boolean;
     onAdd: (creature: Creature) => void;
     onAddAlly: (creature: Creature) => void;
   }
@@ -23,6 +25,7 @@
     remasterOnly,
     artOnly,
     skirmish,
+    troopsOnly,
     onAdd,
     onAddAlly,
   }: Props = $props();
@@ -46,16 +49,6 @@
     traits: true,
     source: false,
   });
-  let showColumns = $state(false);
-
-  const COLUMNS: { key: ColumnKey; locked: boolean }[] = [
-    { key: 'name', locked: true },
-    { key: 'level', locked: true },
-    { key: 'size', locked: false },
-    { key: 'rarity', locked: false },
-    { key: 'traits', locked: false },
-    { key: 'source', locked: false },
-  ];
 
   function setSort(col: 'name' | 'level') {
     if (sortBy === col) sortDesc = !sortDesc;
@@ -88,6 +81,9 @@
       if (rarityFilter.length && !rarityFilter.includes(c.rarity)) return false;
       if (remasterOnly && !c.remaster) return false;
       if (artOnly && !c.hasArt) return false;
+      // Gated on skirmish so the checkbox — hidden outside skirmish — can never silently
+      // lock the list to troops once it's off.
+      if (skirmish && troopsOnly && !isTroop(c)) return false;
       return true;
     });
     return rows.sort((a, b) => {
@@ -188,16 +184,8 @@
       <colgroup>{@render cols()}</colgroup>
       <thead>
         <tr>
-          <th class="icon-col">
-            <button
-              type="button"
-              class="gear"
-              title={L('table.chooseColumns')}
-              aria-label={L('table.chooseColumns')}
-              onclick={() => (showColumns = !showColumns)}
-            >
-              <i class="fa-solid fa-gear" aria-hidden="true"></i>
-            </button>
+          <th class="icon-col chooser-cell-rg">
+            <ColumnChooser bind:visibility={columnVisibility} />
           </th>
           <th class="icon-col"></th>
           <th class="icon-col"></th>
@@ -258,25 +246,6 @@
       </tbody>
     </table>
   </div>
-
-  {#if showColumns}
-    <!-- Click-away backdrop: closes the column chooser without a modal. -->
-    <button class="col-backdrop" type="button" aria-label="Close" onclick={() => (showColumns = false)}></button>
-    <div class="col-popover">
-      <strong>{L('table.columns')}</strong>
-      {#each COLUMNS as col (col.key)}
-        <label class="col-toggle" class:locked={col.locked}>
-          <input
-            type="checkbox"
-            checked={columnVisibility[col.key]}
-            disabled={col.locked}
-            onchange={(e) => (columnVisibility[col.key] = e.currentTarget.checked)}
-          />
-          <span>{L(`table.${col.key}`)}</span>
-        </label>
-      {/each}
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -358,8 +327,8 @@
     gap: 0.6rem;
     min-height: 132px;
     padding: 0.5rem;
-    background: var(--peb-brand-surface-low);
-    border: 1px solid var(--peb-brand-border);
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(128, 128, 128, 0.35);
     border-radius: 6px;
   }
   .creature-preview.empty {
@@ -389,9 +358,9 @@
     border-radius: 5px;
     background: rgba(0, 0, 0, 0.35);
   }
-  /* Module-supplied art keeps the brand ring that the table thumbnails dropped. */
+  /* Module-supplied art keeps a neutral ring that the table thumbnails dropped. */
   .preview-art.has-art {
-    box-shadow: 0 0 0 1px var(--peb-brand-border), 0 2px 8px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.3), 0 2px 8px rgba(0, 0, 0, 0.45);
   }
   .preview-art.placeholder {
     display: flex;
@@ -445,7 +414,7 @@
     width: auto;
     padding: 4px 10px;
     border-radius: 4px;
-    border: 1px solid var(--peb-brand-border);
+    border: 1px solid rgba(128, 128, 128, 0.35);
     background: rgba(128, 128, 128, 0.12);
     color: inherit;
     font-size: var(--peb-text-sm);
@@ -454,30 +423,33 @@
   }
   .preview-btn.add {
     flex: 1;
-    background: var(--peb-brand-surface);
-    color: var(--peb-on-brand);
   }
-  /* Allied-troop add: a distinct friendly-blue so it reads apart from the brand-teal "Add". */
+  /* Allied add: the sole brand-green accent, marking the friendly action apart from the
+     neutral "Add" that drops the creature into the encounter. */
   .preview-btn.ally {
-    background: #1d4463;
-    border-color: #2b5f86;
-    color: #dff0ff;
+    background: var(--peb-brand-surface);
+    border-color: var(--peb-brand-border);
+    color: var(--peb-on-brand);
   }
   .preview-btn:hover {
     filter: brightness(1.12);
   }
 
-  /* Split-table: header and body are separate tables sharing a colgroup so widths line up;
-     scrollbar-gutter: stable on both reserves the same gutter so the body scrollbar sits
-     below the header rather than beside it. */
+  /* Split-table: header and body are separate tables sharing a colgroup so widths line up. */
   .split-table {
     table-layout: fixed;
     width: 100%;
     border-collapse: collapse;
   }
+  /* Visible so the open column-chooser menu can escape the one-row header. Forgoes the
+     scrollbar-gutter it used to reserve — negligible with overlay/thin scrollbars, and
+     worth it to keep the chooser in the header row. */
   .head-table-wrap {
-    overflow: hidden;
-    scrollbar-gutter: stable;
+    overflow: visible;
+  }
+  /* Positioning context for the absolutely-placed chooser it holds. */
+  .chooser-cell-rg {
+    position: relative;
   }
   .table-scroll {
     flex: 1;
@@ -578,51 +550,5 @@
   }
   .icon-action.open:hover {
     background: rgba(128, 128, 128, 0.25);
-  }
-  .gear {
-    width: 100%;
-    background: transparent;
-    border: 0;
-    padding: 4px;
-    cursor: pointer;
-    color: inherit;
-  }
-  .gear:hover {
-    background: rgba(128, 128, 128, 0.25);
-  }
-
-  .col-backdrop {
-    position: fixed;
-    inset: 0;
-    background: transparent;
-    border: 0;
-    z-index: 99;
-    cursor: default;
-  }
-  .col-popover {
-    position: absolute;
-    z-index: 100;
-    top: 6rem;
-    left: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 0.5rem 0.75rem;
-    background: #20232a;
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
-  }
-  .col-toggle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: var(--peb-text);
-    cursor: pointer;
-  }
-  .col-toggle.locked {
-    opacity: 0.55;
-    cursor: not-allowed;
   }
 </style>
