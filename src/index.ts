@@ -2,6 +2,7 @@ import './styles.css';
 import { MODULE_ID } from './constants';
 import { EncounterBuilderApp } from './ui/EncounterBuilderApp';
 import { addEncounterToScene, encounterFromCombat, missingFromScene, saveEncounter } from './encounter/save';
+import { loadCreatures } from './data/creatures';
 
 const LAUNCH_ID = `${MODULE_ID}-launch`;
 const ADD_TO_SCENE_CLASS = `${MODULE_ID}-add-to-scene`;
@@ -14,6 +15,7 @@ interface ModuleApi {
   saveEncounter: typeof saveEncounter;
   addEncounterToScene: typeof addEncounterToScene;
   encounterFromCombat: typeof encounterFromCombat;
+  loadCreatures: typeof loadCreatures;
 }
 
 async function handleAddToScene(): Promise<void> {
@@ -139,6 +141,7 @@ Hooks.once('ready', () => {
     saveEncounter,
     addEncounterToScene,
     encounterFromCombat,
+    loadCreatures,
   };
   // `api` is the Foundry convention for a public API, but isn't a typed field on Module.
   if (module) (module as { api?: ModuleApi }).api = api;

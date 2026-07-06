@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  activeStageIndex,
   adjustmentForVariant,
   computeCost,
   computeDelta,
@@ -147,6 +148,43 @@ describe('makeBarStages', () => {
     expect(ats[5]).toBe(100);
     // no longer the fixed 25 — the whole scale is pushed right by the reinforcement
     expect(ats[1]).toBeGreaterThan(50);
+  });
+});
+
+describe('activeStageIndex', () => {
+  const stages = [{ at: 0 }, { at: 25 }, { at: 50 }, { at: 75 }, { at: 100 }] as Parameters<
+    typeof activeStageIndex
+  >[0];
+
+  it('picks the last stage the value has reached', () => {
+    expect(activeStageIndex(stages, 0)).toBe(0);
+    expect(activeStageIndex(stages, 24.9)).toBe(0);
+    expect(activeStageIndex(stages, 25)).toBe(1); // inclusive at the threshold
+    expect(activeStageIndex(stages, 60)).toBe(2);
+    expect(activeStageIndex(stages, 100)).toBe(4);
+    expect(activeStageIndex(stages, 130)).toBe(4); // past the top clamps to the last stage
+  });
+});
+
+describe('skirmish threat band', () => {
+  // The payoff of skirmish mode: enemy XP is rated against the *reinforced* thresholds. This pins
+  // the whole reinforcedBudget → makeBarStages → activeStageIndex chain the bar renders through —
+  // the bar value and the chip positions must share budget[4] as their denominator, or the band drifts.
+  const bandFor = (budget: number[], enemyXp: number) =>
+    activeStageIndex(makeBarStages(budget), Math.min(100, (enemyXp / budget[4]) * 100));
+
+  const reinforced = reinforcedBudget(makeXpBudget(4), 100); // [140,160,180,220,260], one strong ally troop
+  const band = (enemyXp: number) => bandFor(reinforced, enemyXp);
+
+  it('measures enemy XP against the reinforced tiers, not the base ones', () => {
+    expect(band(0)).toBe(0); // pre-Trivial
+    expect(band(140)).toBe(1); // exactly the reinforced Trivial threshold
+    expect(band(200)).toBe(3); // between reinforced Moderate (180) and Severe (220) → Moderate
+    expect(band(260)).toBe(5); // reinforced Extreme
+    expect(band(400)).toBe(5); // overkill still clamps to Extreme
+    // 200 enemy XP is off-the-charts Extreme against the base [40,60,80,120,160]; the allies pull it down.
+    expect(bandFor(makeXpBudget(4), 200)).toBe(5);
+    expect(band(200)).toBeLessThan(bandFor(makeXpBudget(4), 200));
   });
 });
 

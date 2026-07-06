@@ -7,6 +7,8 @@ declare global {
   var game: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-var
   var ui: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-var
+  var foundry: any;
 }
 
 export const MODULE_ID = 'pf2e-encounter-builder-rg';
