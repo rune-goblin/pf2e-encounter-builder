@@ -212,7 +212,12 @@ async function creatureForCombatant(actor: ActorPF2e) {
     const fromSource = await creatureFromUuid(source);
     if (fromSource) return fromSource;
   }
-  return entryToCreature(actor as unknown as RawIndexEntry);
+  // Homebrew/world actor (no compendium source): key off the base actor, not a placed token's
+  // synthetic copy. A token's synthetic actor has a token-scoped uuid (…Token.<id>.Actor.<id>)
+  // that differs per token, so without this two duplicates sharing one base actor wouldn't
+  // collapse into a single counted row after Add to Scene.
+  const base = actor.token?.baseActor ?? actor;
+  return entryToCreature(base as unknown as RawIndexEntry);
 }
 
 // Reverse of saveEncounter: rebuild the builder's entry list from a combat's combatants,
