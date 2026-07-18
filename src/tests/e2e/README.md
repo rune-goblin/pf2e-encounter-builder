@@ -26,10 +26,27 @@ always exercise current source. There is no Vite webServer.
 
 `npm run test:e2e:setup` builds `test/foundry-data/` (gitignored): a Foundry data path with its own
 `Config/options.json` (port 30005), the activated `license.json` copied in, and **no `admin.txt`**
-(so there's no admin password — specs join a world as a user, never `/setup`). `systems`, `modules`,
-and `worlds` are **symlinked** from your real Foundry data dir, so tests run against the same pf2e
-system, the live module scaffold, and your existing worlds. It reuses the `foundryData` path
-`npm run setup` cached in `.dev-paths.json` (or `FOUNDRY_DATA`).
+(so there's no admin password — specs join a world as a user, never `/setup`). It reuses the
+`foundryData` path `npm run setup` cached in `.dev-paths.json` (or `FOUNDRY_DATA`).
+
+`systems`, `modules` and the test world are **cloned** from that data dir — not symlinked — so
+**you can run your own Foundry while the suite runs.** Foundry takes an exclusive LevelDB lock on
+every world db *and every compendium pack it can see* (well over a hundred once a system and a few
+content modules are installed); sharing those directories means whichever instance boots second
+fails to open them.
+
+On APFS the clones are copy-on-write, so mirroring gigabytes takes seconds and a few MB of real
+disk. `start-test-env.sh` re-clones `systems`/`modules` on every boot (set
+`TEST_FOUNDRY_SKIP_SETUP=1` to skip), which stops them drifting behind a system or sibling-module
+update. Two fixups keep the clone useful:
+
+- The module under test keeps `dist`, `lang`, `module.json` and `assets` as symlinks to the repo,
+  so a Vite build is live in the harness with no re-clone.
+- Any module whose `packs` is a symlink into a repo gets that one entry cloned — otherwise the test
+  instance locks your built LevelDB and `npm run build` silently skips packs.
+
+The world is cloned once and then left alone (it holds the module-enabled setting `global-setup`
+writes). `npm run test:e2e:setup -- --reset-world` re-clones it for a clean slate.
 
 ## The test world
 
@@ -74,13 +91,14 @@ locally, so a stray Foundry left on a port gets silently reused. Guard rails:
   ```bash
   lsof -ti:30005 | xargs kill    # stray test Foundry (also check :30000 / :30001)
   ```
-- Make sure the test world isn't open in your normal Foundry (LevelDB lock).
+- Your own Foundry being open is *fine* — the data path is cloned, not shared. Only a stray
+  Foundry **on :30005** can hijack a run.
 
 ## Conventions for new specs
 
 - Use the `gmPage` fixture from `fixtures/foundry-clients.ts` (worker-scoped GM login, module active).
-- Name created documents with the `__e2e_` prefix and delete them in `afterEach`. The world is
-  shared — leave it as you found it.
+- Name created documents with the `__e2e_` prefix and delete them in `afterEach`. The world clone
+  persists across runs — leave it as you found it.
 - Reach Foundry APIs with `page.evaluate(() => game.…)`; drive the UI with your app's **stable**
   selectors (the ApplicationV2 element id, `data-*` hooks). The shipped `launch.spec.ts` is the
   minimal example: it opens the app via the public API and asserts the window renders.

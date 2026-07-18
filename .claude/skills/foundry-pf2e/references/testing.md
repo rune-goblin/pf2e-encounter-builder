@@ -55,8 +55,11 @@ playwright test
 
 The harness serves the **built** `dist/` bundle from the test Foundry (this repo's `npm run dev` is
 a reverse proxy, not a bundle server), so `test:e2e` rebuilds first. Test data lives in
-`test/foundry-data/` with `systems`/`modules`/`worlds` **symlinked** from the real data dir and
-**no `admin.txt`** (specs join a world as a user, never `/setup`).
+`test/foundry-data/` with `systems`/`modules`/the test world **cloned** (copy-on-write) from the real
+data dir and **no `admin.txt`** (specs join a world as a user, never `/setup`). Cloned rather than
+symlinked because Foundry takes an exclusive LevelDB lock on every world db and every compendium
+pack it can see, so a shared data dir means the developer cannot run their own Foundry while the
+suite runs.
 
 ### Preconditions (e2e fails loud, but know them up front)
 
@@ -79,7 +82,9 @@ locally, so a stray Foundry on a port gets silently reused. Before trusting an e
 - `global-setup.ts` asserts `game.world.id === TEST_WORLD` and `game.system.id === 'pf2e'` and logs
   the world + module version it exercised. A stale/wrong server fails loud — read that log line.
 - Kill strays if anything looks off: `lsof -ti:30005 | xargs kill` (also check `:30000`/`:30001`).
-- Make sure the test world isn't open in your desktop Foundry (LevelDB lock).
+- The desktop Foundry may stay open — the data path is cloned, not shared. Only a stray Foundry on
+  **:30005** can hijack a run. Note the clone is point-in-time: changes made in the desktop Foundry
+  reach the harness only after another setup run.
 - If a result surprises you (passes a test you expected to fail, or vice versa), suspect the harness
   before believing the result.
 
