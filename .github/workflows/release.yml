@@ -22,15 +22,29 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Stamp version into module.json
-        run: |
-          jq --arg v "${{ steps.version.outputs.version }}" '.version = $v' module.json > module.tmp.json
-          mv module.tmp.json module.json
-
-      - name: Install and build
+      - name: Install
         run: |
           node scripts/check-lockfile.ts
           npm ci
+
+      # After npm ci, so a version bump can never desync package.json from the lockfile's
+      # root entry mid-install. All three carry the version; the tag is the source of truth.
+      - name: Stamp version from tag
+        env:
+          V: ${{ steps.version.outputs.version }}
+        run: |
+          committed=$(jq -r .version module.json)
+          if [ "$committed" != "$V" ]; then
+            echo "::warning::committed version $committed != tag $V — bump the manifests before tagging"
+          fi
+          for f in module.json package.json; do
+            jq --arg v "$V" '.version = $v' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+          done
+          jq --arg v "$V" '.version = $v | .packages."".version = $v' package-lock.json > lock.tmp
+          mv lock.tmp package-lock.json
+
+      - name: Build
+        run: |
           npm run check
           npm run build
 
