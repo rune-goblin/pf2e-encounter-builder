@@ -73,6 +73,26 @@
   function clearSide() {
     encounter = encounter.filter((e) => e.side !== side);
   }
+
+  // Purely the "released here joins this side" emphasis — the page-level handler owns the drop
+  // itself and reads the side back off data-drop-side. Depth-counted so crossing a child row
+  // doesn't flicker it off; the drop handler zeroes it since no dragleave follows a drop.
+  let dragOver = $state(false);
+  let dragDepth = 0;
+
+  function onDragEnter(event: DragEvent) {
+    if (!event.dataTransfer?.types.includes('text/plain')) return;
+    dragDepth += 1;
+    dragOver = true;
+  }
+  function onDragLeave() {
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) dragOver = false;
+  }
+  function onDrop() {
+    dragDepth = 0;
+    dragOver = false;
+  }
 </script>
 
 {#snippet row(r: { item: EnrichedEntry; i: number })}
@@ -113,7 +133,16 @@
   </li>
 {/snippet}
 
-<div class="encounter-section">
+<!-- The whole section is the target, not just the bordered panel: the heading sits outside the
+     panel, and a drop aimed at "Allied Troops" would otherwise fall through to the enemy list. -->
+<div
+  class="encounter-section"
+  data-drop-side={side}
+  ondragenter={onDragEnter}
+  ondragleave={onDragLeave}
+  ondrop={onDrop}
+  role="presentation"
+>
   <div class="encounter-header">
     <h2 class="section-title">{ally ? L('encounter.allies') : L('encounter.title')}</h2>
     {#if ally}
@@ -135,6 +164,7 @@
     class="encounter-panel"
     class:ally
     class:drop-active={dropActive}
+    class:drop-hover={dragOver}
     style:--panel-border={ally ? 'var(--peb-brand-border)' : stageColor}
   >
     <div class="totals" class:ally style:background={ally ? '' : stageColor} style:color={ally ? '' : totalsTextColor}>
@@ -255,6 +285,12 @@
     border-width: 3px;
     border-color: var(--peb-brand-text);
     box-shadow: inset 0 0 12px rgba(131, 255, 215, 0.35);
+  }
+  /* In skirmish both panels are live targets, so the one actually under the pointer fills in —
+     otherwise two identically-lit panels give no clue which side the creature would join. */
+  .encounter-panel.drop-hover {
+    box-shadow: inset 0 0 20px rgba(131, 255, 215, 0.6);
+    background: rgba(131, 255, 215, 0.08);
   }
   .totals {
     padding: 0.5rem 0.75rem;

@@ -4,6 +4,15 @@ Notable changes to **PF2E Encounter Builder**. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Releases before 0.1.4 predate this
 file; see the GitHub releases for their notes.
 
+## [Unreleased]
+
+### Fixed
+
+- In a skirmish, a creature dragged onto the **Allied Troops** list is added as an ally instead of
+  an enemy. Every drop was previously routed to the enemy list wherever it was released, so allies
+  could only be added with the table's Ally button. Dropping anywhere outside a list still adds an
+  enemy, and both lists now light up during a drag with the one under the pointer filled in.
+
 ## [0.2.1] — 2026-07-25
 
 ### Fixed

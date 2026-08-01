@@ -115,18 +115,26 @@
   let dragActive = $state(false);
   let dragDepth = 0;
 
-  async function addFromUuid(uuid: string) {
+  async function addFromUuid(uuid: string, side: EntrySide) {
     try {
       const creature = await creatureFromUuid(uuid);
       if (!creature) {
         ui.notifications.warn(L('notifications.dropNotCreature'));
         return;
       }
-      addCreature(creature);
+      addCreature(creature, side);
     } catch (err) {
       console.error(`${MODULE_ID} | drop failed`, err);
       ui.notifications.warn(L('notifications.dropFailed'));
     }
+  }
+
+  // Which list the pointer was over when released. Each panel marks itself with data-drop-side;
+  // anything else on the page (the table, the filters, the gaps) falls back to the enemy list,
+  // which is also the only panel rendered outside skirmish.
+  function sideForDropTarget(target: EventTarget | null): EntrySide {
+    const panel = target instanceof Element ? target.closest('[data-drop-side]') : null;
+    return panel?.getAttribute('data-drop-side') === 'ally' ? 'ally' : 'enemy';
   }
 
   // The drag payload is only readable on drop, so the highlight keys off dataTransfer.types
@@ -152,7 +160,7 @@
     const dropped = foundry.applications.ux.TextEditor.getDragEventData(event);
     if (dropped.type !== 'Actor' || typeof dropped.uuid !== 'string') return;
     event.preventDefault();
-    void addFromUuid(dropped.uuid);
+    void addFromUuid(dropped.uuid, sideForDropTarget(event.target));
   }
 
   let loading = $state(false);
@@ -282,6 +290,7 @@
             {partySize}
             stageColor={activeStage.color}
             {totalsTextColor}
+            dropActive={dragActive}
           />
         {/if}
         <CreatureFilters
