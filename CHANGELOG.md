@@ -4,7 +4,7 @@ Notable changes to **PF2E Encounter Builder**. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Releases before 0.1.4 predate this
 file; see the GitHub releases for their notes.
 
-## [Unreleased]
+## [0.2.2] — 2026-08-01
 
 ### Fixed
 
